@@ -5,7 +5,7 @@ if not exist ".venv\Scripts\python.exe" (
  pause
  exit /b 1
 )
-for /f "delims=" %%i in ('.venv\Scripts\python.exe -c "from datetime import datetime; print(datetime.now().strftime('%%Y%%m%%d_%%H%%M%%S_%%f'))"') do set "ENHANCER_RUN=%%i"
+for /f "delims=" %%i in ('.venv\Scripts\python.exe -c "import time; print(time.time_ns())"') do set "ENHANCER_RUN=%%i"
 if not defined ENHANCER_RUN exit /b 1
 if exist "protected_regions.json" (
  .venv\Scripts\python.exe enhance_batch.py input --output "output\run_%ENHANCER_RUN%" --regions protected_regions.json

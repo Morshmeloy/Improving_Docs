@@ -50,6 +50,10 @@ class CVTests(unittest.TestCase):
             region.write_text(json.dumps({'scan.png':{'1':[[.5,.6,.9,.9]]}}))
             self.assertEqual(main([str(src),'--output',str(out),'--regions',str(region),'--ink-study']),0)
             folder=next(out.glob('scan__*'))
+            report=json.loads((folder/'report.json').read_text())
+            self.assertTrue(report['saved_source_rasters_verified'])
+            self.assertTrue(report['saved_pdf_rasters_verified'])
+            self.assertTrue(np.array_equal(a,np.array(Image.open(folder/'page_0001_original.png'))))
             for mode in ('safe','readable','cv_balanced','cv_detail','ink_study'):
                 image=np.array(Image.open(folder/f'page_0001_{mode}.png'))
                 mask=np.array(Image.open(folder/f'page_0001_{mode}_protected.png'))>0

@@ -168,7 +168,8 @@ def process(path, output, args, region_map):
             boxes = region_map.get(path.name, {}).get(str(n), [])
             prefix = f'page_{n:04d}'
             Image.fromarray(rgb).save(stage / f'{prefix}_original.png')
-            row = {'page': n, 'source': info, 'variants': {}}
+            row = {'page': n, 'source': info, 'variants': {},
+                   'source_raster_sha256': hashlib.sha256(rgb.tobytes()).hexdigest()}
             imgs = [(f'{prefix}_original.png', 'Исходник')]
             for mode in modes:
                 out, mask, stats = enhance(rgb, mode, boxes, args.strength)
@@ -194,6 +195,12 @@ def process(path, output, args, region_map):
             doc.close()
             expected_paths = [stage / f'page_{r["page"]:04d}_{mode}.png' for r in record['pages']]
             verify_pdf_rasters(stage / f'enhanced_{mode}.pdf', expected_paths)
+        for row in record['pages']:
+            with Image.open(stage / f'page_{row["page"]:04d}_original.png') as saved_source:
+                samples = np.array(saved_source.convert('RGB'))
+            if hashlib.sha256(samples.tobytes()).hexdigest() != row['source_raster_sha256']:
+                raise RuntimeError('Saved source PNG pixel verification failed')
+        record['saved_source_rasters_verified'] = True
         record['saved_pdf_rasters_verified'] = True
         record['outputs'] = {p.name: sha256(p) for p in stage.iterdir() if p.is_file()}
         (stage / 'report.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
