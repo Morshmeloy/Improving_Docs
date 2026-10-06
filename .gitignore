@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+input/*
+!input/.gitkeep
+output*/
+models/
+protected_regions.json
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.tif
+*.tiff
+validation_private/
