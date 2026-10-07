@@ -1,7 +1,7 @@
 import unittest
 import hashlib
 import numpy as np
-from matched_lettering import fit_glyph
+from matched_lettering import fit_glyph,measure_source_ink
 from template_restore import transfer_static
 from setup_fonts import verify
 
@@ -18,6 +18,12 @@ class MatchedLetteringTests(unittest.TestCase):
         image=np.full((80,180,3),255,np.uint8)
         profile={'schema':2,'protected':[[0,.5,1,1]],'regions':[{'name':'test','kind':'static_label','mode':'metric_matched_text','reviewed':True,'verified_text':'ЗАЯВИТЕЛЬ','target':[.1,.1,.8,.3],'reference':[.1,.1,.8,.3]}]}
         with self.assertRaises(ValueError):transfer_static(image,image,profile)
+
+    def test_faint_source_metrics_fall_back_without_inventing_blank_labels(self):
+        image=np.full((50,180,3),255,np.uint8);image[10:25,30:90]=230
+        box,threshold=measure_source_ink(image)
+        self.assertEqual(box,[30,10,90,25]);self.assertEqual(threshold,235)
+        self.assertEqual(measure_source_ink(np.full_like(image,255)),(None,None))
 
     def test_font_version_and_size_are_verified(self):
         data=b'font-fixture';sha=hashlib.sha1(('blob '+str(len(data))+'\0').encode()+data).hexdigest()

@@ -58,7 +58,7 @@ def page_regions(refinements, whole_document, gain):
     return base + list(refinements)
 
 
-def main(argv=None):
+def main(argv=None, model=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('input', type=Path)
     p.add_argument('--regions', type=Path, help='filename -> page -> boxes AFTER rotation; with --whole-document these refine the full-page pass')
@@ -84,8 +84,9 @@ def main(argv=None):
     if not a.whole_document and not any(chosen.values()):
         p.error('No drawing regions for this exact input filename')
     locks = json.loads(a.locks.read_text(encoding='utf-8-sig')).get(a.input.name, {}) if a.locks else {}
-    from docres_cpu import DocResCPU
-    model = DocResCPU(a.threads, 'binarization')
+    if model is None:
+        from docres_cpu import DocResCPU
+        model = DocResCPU(a.threads, 'binarization')
     a.output.parent.mkdir(parents=True, exist_ok=True)
     stage = Path(tempfile.mkdtemp(prefix='.ink_', dir=a.output.parent))
     document = fitz.open()

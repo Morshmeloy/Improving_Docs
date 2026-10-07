@@ -1,5 +1,9 @@
 # Improving Docs — экспериментальная версия 2.1
 
+Поочерёдная обработка документов и всех их страниц с собственными образцами:
+`setup_batch_windows.bat`, затем `run_batch_review_windows.bat`.
+[Редактор каркаса, инструкция и команды](docs/SEQUENTIAL_BATCH.md).
+
 Актуальный режим: сохранить чёткий восстановленный текст и подогнать его
 шрифт и размер к исходнику — `metric_matched_text` с Tinos.
 [Инструкция и Windows-команда](docs/MATCHED_LETTERING.md).

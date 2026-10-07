@@ -16,3 +16,7 @@ protected_regions.json
 validation_private/
 redraw_regions.json
 ink_regions.json
+
+batch_jobs.json
+templates/
+profiles_local/

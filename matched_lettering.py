@@ -15,8 +15,15 @@ def fit_glyph(glyph, shape, box):
     return result
 
 
+def measure_source_ink(original):
+    for threshold in [210,225,235]:
+        box=ink_bounds(observed_ink(original,threshold))
+        if box is not None:return box,threshold
+    return None,None
+
+
 def matched_label(original, text, weight='bold'):
-    box=ink_bounds(observed_ink(original))
+    box,threshold=measure_source_ink(original)
     if box is None:raise ValueError('Cannot fit type size: no source strokes in this label')
     name='Tinos-Bold.ttf' if weight=='bold' else 'Tinos-Regular.ttf'
     font_path=ROOT/name;sha,size=FILES[name]
@@ -29,5 +36,5 @@ def matched_label(original, text, weight='bold'):
     glyph=np.array(canvas)
     mapped=fit_glyph(glyph,original.shape[:2],box)
     x0,y0,x1,y1=box
-    transform={'method':'crisp verified text fitted to original observed ink dimensions','font':name,'source_ink_bbox':box,'rendered_ink_box':box,'target_ink_width':x1-x0,'target_ink_height':y1-y0,'region_width':original.shape[1],'region_height':original.shape[0],'scale_x':(x1-x0)/glyph.shape[1],'scale_y':(y1-y0)/glyph.shape[0],'font_exactly_identified':False,'content_from_reference':False}
+    transform={'method':'crisp verified text fitted to original observed ink dimensions','font':name,'source_ink_bbox':box,'source_ink_threshold':threshold,'rendered_ink_box':box,'target_ink_width':x1-x0,'target_ink_height':y1-y0,'region_width':original.shape[1],'region_height':original.shape[0],'scale_x':(x1-x0)/glyph.shape[1],'scale_y':(y1-y0)/glyph.shape[0],'font_exactly_identified':False,'content_from_reference':False}
     return np.repeat(mapped[:,:,None],3,axis=2),transform

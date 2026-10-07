@@ -26,10 +26,10 @@ def transfer_static(base, reference, profile, original=None):
     """Return reconstructed raster and exact provenance mask; reject protected overlap."""
     h, w = base.shape[:2]
     rh, rw = reference.shape[:2]
-    if profile.get('schema') not in {1, 2} or not profile.get('regions') or not profile.get('protected'):
+    if profile.get('schema') not in {1, 2, 3} or not profile.get('regions') or not (profile.get('protected') or profile.get('protection_policy') == 'outside_approved_regions'):
         raise ValueError('Profile requires schema=1, static regions and protected content boxes')
     protected = np.zeros((h, w), bool)
-    for box in profile['protected']:
+    for box in profile.get('protected', []):
         x0, y0, x1, y1 = bounds(box, w, h)
         protected[y0:y1, x0:x1] = True
     result = base.copy()
@@ -121,6 +121,8 @@ def main(argv=None):
     parser.add_argument('--base', required=True, type=Path, help='Upright learned-ink reconstructed page PNG')
     parser.add_argument('--reference', required=True, type=Path, help='User-selected blank-form example PNG/JPEG')
     parser.add_argument('--profile', required=True, type=Path)
+    parser.add_argument('--reference-page', type=int, default=1)
+    parser.add_argument('--reference-rotate', type=int, choices=[0,90,180,270], default=0)
     parser.add_argument('--output', required=True, type=Path)
     parser.add_argument('--page', type=int, default=1)
     parser.add_argument('--dpi', type=int, default=200)
@@ -128,11 +130,16 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.output.exists() or args.page < 1 or not 72 <= args.dpi <= 600:
         parser.error('Output must be new, page positive, dpi 72..600')
-    base, reference = load_rgb(args.base), load_rgb(args.reference)
+    base = load_rgb(args.base)
+    reference_entry = next((x for x in pages(args.reference,args.dpi,40) if x[0] == args.reference_page), None)
+    if reference_entry is None: parser.error('Reference page not found')
+    reference = orient(reference_entry[1],args.reference_rotate)
     profile = json.loads(args.profile.read_text(encoding='utf-8-sig'))
     for key, path in [('source_sha256', args.source), ('reference_sha256', args.reference)]:
         if profile.get(key) and sha256(path) != profile[key]:
             parser.error('Profile is bound to a different ' + key + '; create a matching profile')
+    for key, actual in [('expected_dpi',args.dpi),('expected_rotation',args.rotate),('source_page',args.page),('reference_page',args.reference_page),('reference_rotation',args.reference_rotate)]:
+        if key in profile and profile[key] != actual: parser.error('Profile mismatch: ' + key)
     selected = next((entry for entry in pages(args.source, args.dpi, 40) if entry[0] == args.page), None)
     if selected is None:
         parser.error('Page not found')
