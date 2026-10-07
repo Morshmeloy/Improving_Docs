@@ -129,3 +129,10 @@ python enhance_batch.py input --output output/trace_001 --trace-study --trace-st
 Для тестов: `python -m unittest discover -v` (12 тестов, включая белый разрыв линии).
 
 Метод: [наблюдаемые контуры](docs/TRACE_METHOD.md).
+
+## Чёрная обводка и дорисовка коротких разрывов
+
+Новый режим действительно рисует поверх скана. Выберите области через
+`select_redraw_regions_windows.bat`, затем запустите `run_redraw_windows.bat`.
+Пакет обрабатывается последовательно. Подробнее: [BLACK_DRAWING.md](docs/BLACK_DRAWING.md).
+Для проверки кода: `python -m unittest discover -v` — теперь 16 тестов.

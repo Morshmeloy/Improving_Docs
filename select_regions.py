@@ -12,13 +12,14 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('input',type=Path)
     p.add_argument('--output',type=Path,default=Path('protected_regions.json'))
+    p.add_argument('--purpose',choices=['protect','draw'],default='protect')
     args=p.parse_args()
     paths=sorted(x for x in args.input.iterdir() if x.is_file() and x.suffix.lower() in SUPPORTED) if args.input.is_dir() else [args.input]
     if not paths: p.error('No supported files')
     result={}
     if args.output.exists():
         result=json.loads(args.output.read_text(encoding='utf-8-sig'))
-    root=tk.Tk();root.title('Protect signatures and stamps — drag rectangles; Next to confirm')
+    root=tk.Tk();root.title(('Areas for BLACK DRAWING' if args.purpose=='draw' else 'Protect signatures and stamps')+' — drag rectangles; Next to confirm')
     state={'image':None,'start':None,'rect':None,'boxes':[],'key':None}
     label=tk.Label(root);label.pack()
     canvas=tk.Canvas(root,bg='#555',width=780,height=780);canvas.pack()
@@ -41,7 +42,7 @@ def main():
         state['boxes'] = result.get(name, {}).get(str(n), []).copy()
         for x0,y0,x1,y1 in state['boxes']:
             canvas.create_rectangle(x0*im.width,y0*im.height,x1*im.width,y1*im.height,outline='red',width=2)
-        label.config(text=f'{name} | Page {n}. Drag rectangles over ALL signatures/stamps. Next confirms.')
+        label.config(text=f'{name} | Page {n}. '+('Select areas to redraw in black.' if args.purpose=='draw' else 'Select ALL signatures/stamps to protect.')+' Next confirms.')
     def start(e):
         state['start']=(max(0,min(e.x,state['w'])),max(0,min(e.y,state['h'])))
         state['rect']=canvas.create_rectangle(*state['start'],*state['start'],outline='red',width=2)

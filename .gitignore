@@ -13,3 +13,4 @@ protected_regions.json
 *.tif
 *.tiff
 validation_private/
+redraw_regions.json
