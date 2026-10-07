@@ -15,3 +15,4 @@ protected_regions.json
 *.tiff
 validation_private/
 redraw_regions.json
+ink_regions.json

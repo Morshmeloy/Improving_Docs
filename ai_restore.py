@@ -111,6 +111,7 @@ def main(argv=None):
     parser.add_argument('--threads', type=int, default=4)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--engine', choices=['docdiff', 'docres'], default='docdiff')
+    parser.add_argument('--docres-task', choices=['appearance', 'binarization'], default='appearance')
     parser.add_argument('--rotate', type=int, choices=[0, 90, 180, 270], default=0, help='Clockwise rotation BEFORE normalized crop')
     a = parser.parse_args(argv)
     if not a.input.is_file() or a.input.suffix.lower() not in SUPPORTED:
@@ -126,7 +127,7 @@ def main(argv=None):
     started = time.monotonic()
     if a.engine == 'docres':
         from docres_cpu import DocResCPU
-        model = DocResCPU(a.threads)
+        model = DocResCPU(a.threads, a.docres_task)
     else:
         model = DocDiffCPU(a.threads)
     selected = None

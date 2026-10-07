@@ -20,12 +20,34 @@ def appearance_prompt(bgr):
     return cv2.resize(cv2.merge(planes), (w, h))
 
 
+def binarization_prompt(bgr):
+    from skimage.filters import threshold_sauvola
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    side = min(gray.shape)
+    n1, n2 = max(3, int(.05 * side) | 1), max(3, int(.1 * side) | 1)
+    first = threshold_sauvola(gray, window_size=n1, k=.5)
+    normalized = np.zeros(gray.shape, np.float32)
+    selected = gray > first
+    normalized[selected] = (gray[selected] - first[selected]) / np.maximum(float(gray.max()) - first[selected], 1e-6)
+    normalized = (normalized * 255).clip(0, 255).astype(np.uint8)
+    second = threshold_sauvola(normalized, window_size=n2, k=.5)
+    binary = np.where(normalized <= second, 0, 255).astype(np.uint8)
+    dx = cv2.convertScaleAbs(cv2.Sobel(bgr, cv2.CV_16S, 1, 0))
+    dy = cv2.convertScaleAbs(cv2.Sobel(bgr, cv2.CV_16S, 0, 1))
+    gradient = cv2.cvtColor(cv2.addWeighted(dx, .5, dy, .5, 0), cv2.COLOR_BGR2GRAY)
+    return np.stack((second.astype(np.uint8), gradient, binary), axis=2)
+
+
 class DocResCPU(DocDiffCPU):
     name = 'DocRes pretrained appearance, CPU float32'
     steps = 0
     manifest_name = 'docres_manifest.json'
 
-    def __init__(self, threads=4):
+    def __init__(self, threads=4, task='appearance'):
+        if task not in {'appearance', 'binarization'}:
+            raise ValueError('Unknown DocRes task')
+        self.task = task
+        self.name = 'DocRes pretrained ' + task + ', CPU float32'
         import torch
         from setup_docres import DEST
         manifest = json.loads((ROOT / self.manifest_name).read_text())
@@ -54,7 +76,8 @@ class DocResCPU(DocDiffCPU):
     def prepare(self, rgb):
         bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         # Compute one prompt over the selected region, not differently for every tile.
-        return np.concatenate((bgr, appearance_prompt(bgr)), axis=2)
+        prompt = appearance_prompt(bgr) if self.task == 'appearance' else binarization_prompt(bgr)
+        return np.concatenate((bgr, prompt), axis=2)
 
     def predict(self, six_channels, seed=0):
         torch = self.torch
@@ -65,6 +88,9 @@ class DocResCPU(DocDiffCPU):
             result = self.model(tensor)
             if not torch.isfinite(result).all():
                 raise ValueError('Nonfinite DocRes output')
+            if self.task == 'binarization':
+                gray = result[:, :2].argmax(dim=1)[0].numpy().astype(np.uint8) * 255
+                return np.repeat(gray[:h, :w, None], 3, axis=2)
             bgr = result[0].permute(1, 2, 0).clamp(0, 1).numpy()
         bgr = np.rint(bgr[:h, :w] * 255).astype(np.uint8)
         return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)

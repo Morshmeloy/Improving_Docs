@@ -71,7 +71,9 @@ def redraw(rgb,areas,max_gap=6,line_width=1,threshold=.025,locked=None):
         raise ValueError('gap 0..20, width 1..3, threshold .005..0.2')
     if areas.shape!=rgb.shape[:2]:raise ValueError('Area mask shape mismatch')
     h,w=areas.shape
-    out,_=trace_strokes(rgb,.55)
+    traced,_=trace_strokes(rgb,.55)
+    out=rgb.copy()
+    out[areas]=traced[areas]
     density=1-np.clip(rgb.astype(np.float32)/np.maximum(paper_background(rgb),32),0,1)
     evidence=density.max(axis=2)
     # Filter only the drawing layer. Original observed pixels are not removed.

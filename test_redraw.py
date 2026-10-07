@@ -8,6 +8,25 @@ from redraw_pipeline import connect_endpoints,redraw
 from redraw_batch import main
 
 class DrawingTests(unittest.TestCase):
+    def test_pixels_outside_drawing_regions_remain_exact(self):
+        a=np.full((100,160,3),250,np.uint8);a[50:53,10:100]=238
+        areas=np.zeros((100,160),bool);areas[:,10:40]=True
+        result,_,stats=redraw(a,areas)
+        np.testing.assert_array_equal(result[~areas],a[~areas])
+        self.assertGreater(stats['drawn_pixels'],0)
+
+    def test_missing_regions_is_error_instead_of_successful_noop(self):
+        with tempfile.TemporaryDirectory() as td:
+            root=Path(td);a=np.full((30,40,3),255,np.uint8)
+            Image.fromarray(a).save(root/'a.png')
+            (root/'regions.json').write_text('{}')
+            out=root/'out'
+            code=main([str(root/'a.png'),'--output',str(out),'--redraw-regions',str(root/'regions.json')])
+            self.assertEqual(code,1)
+            report=json.loads(next(out.glob('batch_*.json')).read_text())
+            self.assertIn('No drawing regions',report[0]['error'])
+            self.assertFalse(any(x.is_dir() for x in out.iterdir()))
+
     def test_facing_endpoints_are_connected(self):
         skeleton=np.zeros((40,60),bool);skeleton[20,5:25]=True;skeleton[20,29:50]=True
         added,connections=connect_endpoints(skeleton,6)

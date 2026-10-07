@@ -22,6 +22,8 @@ def process(path,output,args,regions,locks):
         for n,rgb,size,info in pages(path,args.dpi,40):
             boxes=regions.get(path.name,{}).get(str(n),[])
             areas=np.ones(rgb.shape[:2],bool) if args.redraw_all else protection_mask(rgb,boxes,color=False)
+            if not areas.any():
+                raise ValueError(f'No drawing regions for file {path.name}, page {n}. Select regions for this exact filename or explicitly use --redraw-all.')
             locked=protection_mask(rgb,locks.get(path.name,{}).get(str(n),[]),color=False)
             out,overlay,stats=redraw(rgb,areas,args.max_gap,args.line_width,args.threshold,locked)
             prefix=f'page_{n:04d}'
@@ -29,6 +31,9 @@ def process(path,output,args,regions,locks):
                 (stage/f'{prefix}_{suffix}.png').write_bytes(png_bytes(array))
             expected.append(stage/f'{prefix}_redrawn.png');add_page(doc,size,png_bytes(out))
             stats['page']=n;stats['protected_equal']=bool(np.array_equal(out[locked],rgb[locked]));report['pages'].append(stats)
+            stats['status']='drawn' if stats['drawn_pixels'] else 'no_strokes_drawn'
+            if not stats['drawn_pixels']:
+                stats['warning']='No black strokes added: check drawing regions, locks and threshold. This is not successful reconstruction.'
             cards.append(f'<h2>Page {n}</h2><div>'+''.join(f'<figure><figcaption>{s}</figcaption><img src="{prefix}_{s}.png"></figure>' for s in ['original','redrawn','drawing_overlay'])+'</div>')
         if not expected:raise ValueError('No pages')
         doc.set_metadata({'title':'EDITED: black tracing, inferred short connections','producer':'Improving Docs redraw'});doc.save(stage/'redrawn.pdf',deflate=True);doc.close()
