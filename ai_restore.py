@@ -1,4 +1,4 @@
-"""DocDiff neural deblurring, CPU float32, native scale and overlapping tiles."""
+"""DocDiff deblurring / DocRes appearance, CPU float32, overlapping native-scale tiles."""
 import argparse
 import hashlib
 import importlib.util
@@ -20,6 +20,10 @@ def positions(length, tile, overlap):
 
 
 class DocDiffCPU:
+    name = 'DocDiff pretrained deblurring, CPU float32'
+    steps = 100
+    manifest_name = 'docdiff_manifest.json'
+
     def __init__(self, threads=4):
         import torch
         from setup_docdiff import DEST, blob_sha
@@ -72,15 +76,19 @@ class DocDiffCPU:
             array = result[0].permute(1, 2, 0).clamp(0, 1).numpy()
         return np.rint(array[:h, :w] * 255).astype(np.uint8)
 
+    def prepare(self, rgb):
+        return rgb
+
     def restore(self, rgb, tile=256, overlap=64, seed=0):
         h, w = rgb.shape[:2]
+        work = self.prepare(rgb)
         ys, xs = positions(h, tile, overlap), positions(w, tile, overlap)
         sums = np.zeros(rgb.shape, dtype=np.float32)
         weights = np.zeros((h, w), dtype=np.float32)
         total = len(ys) * len(xs)
         for index, (y, x) in enumerate((y, x) for y in ys for x in xs):
-            patch = rgb[y:y + tile, x:x + tile]
-            print(f'Tile {index + 1}/{total}: {patch.shape[1]}x{patch.shape[0]}, 100 diffusion steps', flush=True)
+            patch = work[y:y + tile, x:x + tile]
+            print(f'Tile {index + 1}/{total}: {patch.shape[1]}x{patch.shape[0]}, {self.name}', flush=True)
             result = self.predict(patch, seed + index)
             ph, pw = patch.shape[:2]
             wy = np.maximum(np.hanning(ph), .05)
@@ -102,6 +110,8 @@ def main(argv=None):
     parser.add_argument('--overlap', type=int, default=64)
     parser.add_argument('--threads', type=int, default=4)
     parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--engine', choices=['docdiff', 'docres'], default='docdiff')
+    parser.add_argument('--rotate', type=int, choices=[0, 90, 180, 270], default=0, help='Clockwise rotation BEFORE normalized crop')
     a = parser.parse_args(argv)
     if not a.input.is_file() or a.input.suffix.lower() not in SUPPORTED:
         parser.error('Input file missing or unsupported')
@@ -114,7 +124,11 @@ def main(argv=None):
     if a.output.exists():
         parser.error('Output exists; choose a new folder')
     started = time.monotonic()
-    model = DocDiffCPU(a.threads)
+    if a.engine == 'docres':
+        from docres_cpu import DocResCPU
+        model = DocResCPU(a.threads)
+    else:
+        model = DocDiffCPU(a.threads)
     selected = None
     for n, rgb, size, info in pages(a.input, a.dpi, 40):
         if n == a.page:
@@ -122,18 +136,27 @@ def main(argv=None):
             break
     if selected is None:
         parser.error('Page not found')
+    selected = orient(selected, a.rotate)
     if a.crop:
         h, w = selected.shape[:2]
         x0, y0, x1, y1 = a.crop
         selected = selected[math.floor(y0 * h):math.ceil(y1 * h), math.floor(x0 * w):math.ceil(x1 * w)].copy()
     restored = model.restore(selected, a.tile, a.overlap, a.seed)
     a.output.mkdir(parents=True)
-    for name, image in [('original', selected), ('docdiff', restored)]:
+    for name, image in [('original', selected), (a.engine, restored)]:
         (a.output / (name + '.png')).write_bytes(png_bytes(image))
-    report = {'method': 'DocDiff pretrained deblurring, CPU float32', 'upstream_commit': json.loads((ROOT / 'docdiff_manifest.json').read_text())['commit'], 'source': a.input.name, 'source_sha256': hashlib.sha256(a.input.read_bytes()).hexdigest(), 'page': a.page, 'crop': a.crop, 'dpi': a.dpi, 'tile': a.tile, 'overlap': a.overlap, 'seed': a.seed, 'diffusion_steps': 100, 'seconds': round(time.monotonic() - started, 2), 'quality_verified': False}
+    changes = np.abs(restored.astype(np.int16) - selected.astype(np.int16))
+    report = {'method': model.name, 'upstream_commit': json.loads((ROOT / model.manifest_name).read_text())['commit'], 'source': a.input.name, 'source_sha256': hashlib.sha256(a.input.read_bytes()).hexdigest(), 'page': a.page, 'rotate_clockwise': a.rotate, 'crop_after_rotation': a.crop, 'dpi': a.dpi, 'tile': a.tile, 'overlap': a.overlap, 'seed': a.seed, 'diffusion_steps': model.steps, 'seconds': round(time.monotonic() - started, 2), 'mean_absolute_channel_change': float(changes.mean()), 'pixels_changed_more_than_10': float((changes.max(axis=2) > 10).mean()), 'quality_verified': False}
     (a.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-    (a.output / 'comparison.html').write_text('<!doctype html><meta charset="utf-8"><title>DocDiff comparison</title><style>div{display:flex;gap:16px}figure{margin:0;width:48%}img{max-width:100%}</style><h1>Original / DocDiff neural deblurring</h1><p>Experimental reconstruction. Inspect letters, signatures and stamps at full resolution.</p><div><figure><figcaption>Original</figcaption><a href="original.png"><img src="original.png"></a></figure><figure><figcaption>DocDiff</figcaption><a href="docdiff.png"><img src="docdiff.png"></a></figure></div>', encoding='utf-8')
+    import html
+    label = html.escape(model.name)
+    filename = html.escape(a.input.name)
+    (a.output / 'comparison.html').write_text(f'<!doctype html><meta charset="utf-8"><title>AI comparison</title><style>div{{display:flex;gap:16px}}figure{{margin:0;width:48%}}img{{max-width:100%}}</style><h1>Original / {label}</h1><p>File: {filename}; page {a.page}; rotation {a.rotate} clockwise. Click an image to inspect full resolution.</p><p>Mean channel change: {changes.mean():.2f}/255. Experimental reconstruction; quality requires inspection.</p><div><figure><figcaption>Original</figcaption><a href="original.png"><img src="original.png"></a></figure><figure><figcaption>{label}</figcaption><a href="{a.engine}.png"><img src="{a.engine}.png"></a></figure></div>', encoding='utf-8')
     print('Saved:', a.output.resolve(), flush=True)
+
+
+def orient(rgb, clockwise):
+    return np.rot90(rgb, k=-(clockwise // 90)).copy()
 
 
 if __name__ == '__main__':

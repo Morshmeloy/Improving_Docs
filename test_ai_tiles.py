@@ -1,8 +1,18 @@
 import unittest
-from ai_restore import positions
+from ai_restore import positions, orient
+import numpy as np
 
 
 class TileCoverageTests(unittest.TestCase):
+    def test_clockwise_rotation_moves_pixel_and_returns_contiguous(self):
+        image = np.zeros((2, 3, 3), np.uint8)
+        image[0, 0] = [10, 20, 30]
+        result = orient(image, 90)
+        self.assertEqual(result.shape, (3, 2, 3))
+        np.testing.assert_array_equal(result[0, 1], [10, 20, 30])
+        np.testing.assert_array_equal(orient(orient(image, 180), 180), image)
+        self.assertTrue(result.flags.c_contiguous)
+
     def test_coverage_and_overlap_at_non_multiple_edges(self):
         for length in [1, 82, 256, 257, 511, 700]:
             starts = positions(length, 256, 64)
