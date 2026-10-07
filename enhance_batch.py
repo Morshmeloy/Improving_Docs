@@ -20,6 +20,7 @@ import fitz
 import numpy as np
 from PIL import Image, ImageOps, ImageSequence
 from cv_pipeline import restore, diagnostics
+from trace_pipeline import trace_strokes
 
 SUPPORTED = {'.pdf', '.png', '.jpg', '.jpeg', '.tif', '.tiff', '.bmp', '.webp'}
 LOG = logging.getLogger('enhancer')
@@ -55,7 +56,10 @@ def protection_mask(rgb, boxes=(), color=True):
 def enhance(rgb, mode, boxes=(), strength=1.):
     """Generate a contrast candidate and restore exact locked source pixels."""
     extra = {}
-    if mode in {'cv_balanced', 'cv_detail', 'ink_study'}:
+    if mode == 'trace_study':
+        out, extra = trace_strokes(rgb, strength)
+        mask = protection_mask(rgb, boxes, color=False)
+    elif mode in {'cv_balanced', 'cv_detail', 'ink_study'}:
         out, extra = restore(rgb, mode, strength)
         mask = protection_mask(rgb, boxes, color=mode != 'ink_study')
     elif mode == 'photo':
@@ -159,6 +163,8 @@ def process(path, output, args, region_map):
         modes = ['photo'] if args.mode == 'photo' else ['safe', 'readable', 'cv_balanced', 'cv_detail']
         if args.ink_study and args.mode == 'document':
             modes.append('ink_study')
+        if args.trace_study and args.mode == 'document':
+            modes.append('trace_study')
         docs = {m: fitz.open() for m in modes}
         record = {'source_name': path.name, 'source_sha256': digest, 'mode': args.mode,
                   'created_utc': datetime.now(timezone.utc).isoformat(), 'pages': [],
@@ -172,7 +178,7 @@ def process(path, output, args, region_map):
                    'source_raster_sha256': hashlib.sha256(rgb.tobytes()).hexdigest()}
             imgs = [(f'{prefix}_original.png', 'Исходник')]
             for mode in modes:
-                out, mask, stats = enhance(rgb, mode, boxes, args.strength)
+                out, mask, stats = enhance(rgb, mode, boxes, args.trace_strength if mode == 'trace_study' else args.strength)
                 data = png_bytes(out)
                 (stage / f'{prefix}_{mode}.png').write_bytes(data)
                 Image.fromarray((mask*255).astype(np.uint8)).save(stage / f'{prefix}_{mode}_protected.png')
@@ -190,7 +196,7 @@ def process(path, output, args, region_map):
         if not record['pages']:
             raise ValueError('No pages found')
         for mode, doc in docs.items():
-            doc.set_metadata({'title': f'Enhanced derivative ({mode})', 'producer': 'Improving Docs 2.0 experimental'})
+            doc.set_metadata({'title': f'Enhanced derivative ({mode})', 'producer': 'Improving Docs 2.1 experimental'})
             doc.save(stage / f'enhanced_{mode}.pdf', deflate=True, garbage=0)
             doc.close()
             expected_paths = [stage / f'page_{r["page"]:04d}_{mode}.png' for r in record['pages']]
@@ -206,7 +212,7 @@ def process(path, output, args, region_map):
         (stage / 'report.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
         (stage / 'comparison.html').write_text('<!doctype html><meta charset="utf-8"><title>Сравнение</title>'
             '<style>body{font:16px sans-serif;background:#ddd;margin:20px}.row{display:flex;gap:12px}figure{margin:0;flex:1;min-width:0}img{width:100%}figcaption{padding:8px;background:white}a{display:block}</style>'
-            '<h1>'+html.escape(path.name)+'</h1><p>Нажмите изображение для полного размера. Белые зоны *_protected.png сохранены точно. Серые подписи вне этих зон обработаны вместе с текстом. ink_study меняет цветные чернила и требует ручной проверки; ручные прямоугольники защищены во всех вариантах. *_changes.png показывает величину изменения красным. Нет автоматической оценки достоверности букв.</p>'+''.join(cards), encoding='utf-8')
+            '<h1>'+html.escape(path.name)+'</h1><p>Нажмите изображение для полного размера. Белые зоны *_protected.png сохранены точно. Серые подписи вне этих зон обработаны вместе с текстом. ink_study и trace_study меняют чернила и требует ручной проверки; ручные прямоугольники защищены во всех вариантах. *_changes.png показывает величину изменения красным. Нет автоматической оценки достоверности букв.</p>'+''.join(cards), encoding='utf-8')
         stage.rename(target)
         return {'source': str(path), 'status': 'ok', 'output': str(target), 'pages': len(record['pages'])}
     except Exception:
@@ -228,11 +234,17 @@ def main(argv=None):
     parser.add_argument('--recursive', action='store_true')
     parser.add_argument('--strength', type=float, default=1., help='CV gain multiplier, 0.25..2')
     parser.add_argument('--ink-study', action='store_true', help='Extra experimental candidate; modifies colored ink outside manual locks')
+    parser.add_argument('--trace-study', action='store_true', help='Extra experimental directional stroke enhancement; manual locks only')
+    parser.add_argument('--trace-strength', type=float, default=.8, help='Trace gain, 0.25..2; default 0.8')
     args = parser.parse_args(argv)
     if not 72 <= args.dpi <= 600 or not math.isfinite(args.max_megapixels) or args.max_megapixels <= 0:
         parser.error('DPI must be 72..600; max-megapixels must be finite and positive')
     if not math.isfinite(args.strength) or not .25 <= args.strength <= 2:
         parser.error('--strength must be 0.25..2')
+    if not math.isfinite(args.trace_strength) or not .25 <= args.trace_strength <= 2:
+        parser.error('--trace-strength must be 0.25..2')
+    if args.trace_study and args.mode == 'photo':
+        parser.error('--trace-study is for document mode')
     cv2.setNumThreads(max(1, min(4, os.cpu_count() or 1)))
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
