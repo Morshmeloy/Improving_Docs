@@ -11,7 +11,7 @@ import shutil
 import cv2
 import fitz
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageFont, ImageDraw
 from enhance_batch import pages, png_bytes, add_page, verify_pdf_rasters, sha256
 from ai_restore import orient
 from ink_reconstruct import bounds
@@ -26,7 +26,7 @@ def transfer_static(base, reference, profile):
     """Return reconstructed raster and exact provenance mask; reject protected overlap."""
     h, w = base.shape[:2]
     rh, rw = reference.shape[:2]
-    if profile.get('schema') != 1 or not profile.get('regions') or not profile.get('protected'):
+    if profile.get('schema') not in {1, 2} or not profile.get('regions') or not profile.get('protected'):
         raise ValueError('Profile requires schema=1, static regions and protected content boxes')
     protected = np.zeros((h, w), bool)
     for box in profile['protected']:
@@ -36,8 +36,8 @@ def transfer_static(base, reference, profile):
     mask = np.zeros((h, w), bool)
     records = []
     for region in profile['regions']:
-        if region.get('kind') not in {'static_heading', 'ornamental_frame'}:
-            raise ValueError('Only static_heading or ornamental_frame may be transferred')
+        if region.get('kind') not in {'static_heading', 'ornamental_frame', 'static_label', 'static_symbol'}:
+            raise ValueError('Only static form elements may be transferred')
         tx0, ty0, tx1, ty1 = bounds(region['target'], w, h)
         sx0, sy0, sx1, sy1 = bounds(region['reference'], rw, rh)
         if protected[ty0:ty1, tx0:tx1].any():
@@ -45,7 +45,39 @@ def transfer_static(base, reference, profile):
         patch = reference[sy0:sy1, sx0:sx1]
         height, width = ty1-ty0, tx1-tx0
         mode = region.get('mode', 'projective')
-        if mode == 'projective':
+        if mode == 'verified_label_text':
+            if not region.get('verified_text') or not region.get('reviewed'):
+                raise ValueError('Typesetting requires manually verified static reference text')
+            font_paths = [Path('C:/Windows/Fonts/timesbd.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf')]
+            font_path = next((x for x in font_paths if x.is_file()), None)
+            if font_path is None: raise ValueError('Install a Cyrillic serif bold font: timesbd.ttf or DejaVuSerif-Bold.ttf')
+            font = ImageFont.truetype(str(font_path),120)
+            text = region['verified_text']
+            left,top,right,bottom = font.getbbox(text)
+            canvas = Image.new('L',(right-left,bottom-top),255)
+            ImageDraw.Draw(canvas).text((-left,-top),text,font=font,fill=0)
+            glyph = np.array(canvas)
+            mapped_gray = cv2.resize(glyph,(width,height),interpolation=cv2.INTER_AREA)
+            mapped = np.repeat(mapped_gray[:,:,None],3,axis=2)
+            transform = {'method':'typesetting of manually verified static text from reference', 'font':font_path.name, 'original_typography_exact':False}
+        elif mode == 'ink_label':
+            if not region.get('verified_text') or not region.get('reviewed'):
+                raise ValueError('Ink labels require manually reviewed reference transcription')
+            # Isolate achromatic printed ink; reject colored signatures/seals.
+            gray = cv2.cvtColor(patch, cv2.COLOR_RGB2GRAY)
+            chroma = patch.max(axis=2).astype(np.int16)-patch.min(axis=2).astype(np.int16)
+            ink = (gray < 160) & (chroma < 65)
+            count, labels, stats, _ = cv2.connectedComponentsWithStats(ink.astype(np.uint8),8)
+            keep = np.zeros(count,bool)
+            if count>1: keep[1:] = stats[1:,cv2.CC_STAT_AREA]>=2
+            ink = keep[labels]
+            ys,xs = np.where(ink)
+            if not len(xs): raise ValueError('Reference label has no usable black ink')
+            glyph = (255*(~ink[ys.min():ys.max()+1,xs.min():xs.max()+1])).astype(np.uint8)
+            mapped_gray = cv2.resize(glyph,(width,height),interpolation=cv2.INTER_CUBIC)
+            mapped = np.repeat(mapped_gray[:,:,None],3,axis=2)
+            transform = {'method':'achromatic reference glyph segmentation + bounding-box registration', 'reference_ink_bbox':[int(xs.min()),int(ys.min()),int(xs.max()+1),int(ys.max()+1)]}
+        elif mode == 'projective':
             ph, pw = patch.shape[:2]
             # Explicit four-corner registration: unrelated body text must not
             # participate in feature matching or bias the registration.
