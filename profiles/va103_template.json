@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "description": "Manually registered VA103 upright page at 200dpi with the user-provided Eurasian certificate example. Static form only. Not a universal profile.",
+  "protected": [
+    [
+      0.043,
+      0.106,
+      0.943,
+      0.97
+    ]
+  ],
+  "regions": [
+    {
+      "name": "union_banner",
+      "kind": "static_heading",
+      "target": [
+        0.208,
+        0.022,
+        0.801,
+        0.062
+      ],
+      "reference": [
+        0.17,
+        0.0,
+        0.817,
+        0.041
+      ]
+    },
+    {
+      "name": "certificate_heading",
+      "kind": "static_heading",
+      "target": [
+        0.278,
+        0.074,
+        0.716,
+        0.104
+      ],
+      "reference": [
+        0.261,
+        0.053,
+        0.732,
+        0.084
+      ]
+    },
+    {
+      "name": "left_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.019,
+        0.022,
+        0.039,
+        0.984
+      ],
+      "reference": [
+        0.0,
+        0.0,
+        0.023,
+        1.0
+      ]
+    },
+    {
+      "name": "right_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.945,
+        0.022,
+        0.973,
+        0.984
+      ],
+      "reference": [
+        0.97,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "top_left_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.039,
+        0.022,
+        0.208,
+        0.041
+      ],
+      "reference": [
+        0.023,
+        0.0,
+        0.17,
+        0.021
+      ]
+    },
+    {
+      "name": "top_right_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.801,
+        0.022,
+        0.945,
+        0.041
+      ],
+      "reference": [
+        0.817,
+        0.0,
+        0.97,
+        0.021
+      ]
+    },
+    {
+      "name": "bottom_ornament",
+      "kind": "ornamental_frame",
+      "mode": "tile_x",
+      "target": [
+        0.039,
+        0.972,
+        0.945,
+        0.984
+      ],
+      "reference": [
+        0.827,
+        0.0,
+        0.963,
+        0.021
+      ]
+    }
+  ],
+  "source_sha256": "11c99aa13fc6c224a07ed7c9e0e61a0a8cf35f566ec2a2ba249c4e34d7bc3a78",
+  "reference_sha256": "17e3d75bfa510538f2154cf55c44fc6e3c8f3431c88c8987290731a9c0e78815"
+}
