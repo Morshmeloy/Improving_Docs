@@ -142,7 +142,11 @@ def verify_pdf_rasters(pdf_path, expected_paths):
             if len(images) != 1:
                 raise RuntimeError('Expected one raster per output page')
             pix = fitz.Pixmap(pdf, images[0][0])
-            expected = np.array(Image.open(expected_path).convert('RGB'))
+            try:
+                with Image.open(expected_path) as image:
+                    expected = np.array(image.convert('RGB'))
+            except Exception as exc:
+                raise RuntimeError(f'Invalid saved PNG {expected_path.name}: {exc}') from exc
             if pix.n != 3 or pix.alpha:
                 raise RuntimeError('Saved PDF is not RGB')
             saved = np.frombuffer(pix.samples, np.uint8).reshape(pix.height, pix.width, 3)
@@ -173,7 +177,7 @@ def process(path, output, args, region_map):
         for n, rgb, size, info in pages(path, args.dpi, args.max_megapixels):
             boxes = region_map.get(path.name, {}).get(str(n), [])
             prefix = f'page_{n:04d}'
-            Image.fromarray(rgb).save(stage / f'{prefix}_original.png')
+            (stage / f'{prefix}_original.png').write_bytes(png_bytes(rgb))
             row = {'page': n, 'source': info, 'variants': {},
                    'source_raster_sha256': hashlib.sha256(rgb.tobytes()).hexdigest()}
             imgs = [(f'{prefix}_original.png', 'Исходник')]
@@ -181,10 +185,10 @@ def process(path, output, args, region_map):
                 out, mask, stats = enhance(rgb, mode, boxes, args.trace_strength if mode == 'trace_study' else args.strength)
                 data = png_bytes(out)
                 (stage / f'{prefix}_{mode}.png').write_bytes(data)
-                Image.fromarray((mask*255).astype(np.uint8)).save(stage / f'{prefix}_{mode}_protected.png')
+                (stage / f'{prefix}_{mode}_protected.png').write_bytes(png_bytes((mask*255).astype(np.uint8)))
                 delta = np.abs(out.astype(np.int16)-rgb.astype(np.int16)).max(axis=2)
                 heat = np.stack((delta, np.zeros_like(delta), np.zeros_like(delta)), axis=2).astype(np.uint8)
-                Image.fromarray(heat).save(stage / f'{prefix}_{mode}_changes.png')
+                (stage / f'{prefix}_{mode}_changes.png').write_bytes(png_bytes(heat))
                 add_page(docs[mode], size, data)
                 row['variants'][mode] = stats
                 imgs.append((f'{prefix}_{mode}.png', mode))
@@ -202,8 +206,12 @@ def process(path, output, args, region_map):
             expected_paths = [stage / f'page_{r["page"]:04d}_{mode}.png' for r in record['pages']]
             verify_pdf_rasters(stage / f'enhanced_{mode}.pdf', expected_paths)
         for row in record['pages']:
-            with Image.open(stage / f'page_{row["page"]:04d}_original.png') as saved_source:
-                samples = np.array(saved_source.convert('RGB'))
+            source_png = stage / f'page_{row["page"]:04d}_original.png'
+            try:
+                with Image.open(source_png) as saved_source:
+                    samples = np.array(saved_source.convert('RGB'))
+            except Exception as exc:
+                raise RuntimeError(f'Invalid saved source PNG {source_png.name}: {exc}') from exc
             if hashlib.sha256(samples.tobytes()).hexdigest() != row['source_raster_sha256']:
                 raise RuntimeError('Saved source PNG pixel verification failed')
         record['saved_source_rasters_verified'] = True
