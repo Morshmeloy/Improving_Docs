@@ -1,0 +1,30 @@
+{
+  "commit": "f422a3af10657eeabeca90f2e862d88c72725845",
+  "files": [
+    {
+      "path": "LICENSE",
+      "sha": "c92b5eef53a96ba7eb072ce0427eb838615f7c06",
+      "size": 1070
+    },
+    {
+      "path": "checksave/denoiser.pth",
+      "sha": "dd7cb52b37c0a59559b789a14eaa4d5d44c2b7d0",
+      "size": 16753405
+    },
+    {
+      "path": "checksave/init.pth",
+      "sha": "ded5e03c6fd6420ebeb63496771634fbafd99694",
+      "size": 16161781
+    },
+    {
+      "path": "model/DocDiff.py",
+      "sha": "81981f273ec952ecc4283a309ddc2626ec39dd3e",
+      "size": 14497
+    },
+    {
+      "path": "src/sobel.py",
+      "sha": "9c466085953aa67eeb05e252c1687df32a98099f",
+      "size": 1473
+    }
+  ]
+}

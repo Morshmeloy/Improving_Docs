@@ -1,4 +1,5 @@
 .venv/
+.venv-ai/
 __pycache__/
 *.py[cod]
 input/*
