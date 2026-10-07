@@ -45,7 +45,14 @@ def transfer_static(base, reference, profile, original=None):
         patch = reference[sy0:sy1, sx0:sx1]
         height, width = ty1-ty0, tx1-tx0
         mode = region.get('mode', 'projective')
-        if mode == 'source_guided_label':
+        if mode == 'metric_matched_text':
+            if original is None or original.shape != base.shape:
+                raise ValueError('Metric matched text requires the original raster')
+            if not region.get('verified_text') or not region.get('reviewed'):
+                raise ValueError('Metric matched text requires a reviewed static formulation')
+            from matched_lettering import matched_label
+            mapped, transform = matched_label(original[ty0:ty1,tx0:tx1],region['verified_text'],region.get('weight','bold'))
+        elif mode == 'source_guided_label':
             if original is None or original.shape != base.shape:
                 raise ValueError('Source-guided typography requires the original raster')
             if not region.get('verified_text') or not region.get('reviewed'):
