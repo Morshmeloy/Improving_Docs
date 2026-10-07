@@ -1,3 +1,6 @@
+> Основной запуск теперь автоматический: [два выбора файлов](AUTOMATIC.md).
+> Эта инструкция описывает дополнительный ручной режим `manual_batch_review.py`.
+
 # Поочерёдное восстановление документов с собственными образцами
 
 ## Установка на Windows / AMD
@@ -22,14 +25,10 @@ New-Item -ItemType Directory -Force -Path input, templates | Out-Null
 ## Режим с просмотром каждого документа
 
 ```powershell
-.\.venv-ai\Scripts\python.exe batch_review.py input
+.\.venv-ai\Scripts\python.exe manual_batch_review.py input
 ```
 
-Или:
-
-```powershell
-.\run_batch_review_windows.bat
-```
+Этот дополнительный ручной режим запускается только командой выше.
 
 Программа сама создаст новую папку `output/review_...` и пройдёт файлы в
 алфавитном порядке. Обрабатывается один документ за раз; параллельной загрузки
