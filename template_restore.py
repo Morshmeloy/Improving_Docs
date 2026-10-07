@@ -22,7 +22,7 @@ def load_rgb(path):
         return np.array(image.convert('RGB'))
 
 
-def transfer_static(base, reference, profile):
+def transfer_static(base, reference, profile, original=None):
     """Return reconstructed raster and exact provenance mask; reject protected overlap."""
     h, w = base.shape[:2]
     rh, rw = reference.shape[:2]
@@ -45,7 +45,14 @@ def transfer_static(base, reference, profile):
         patch = reference[sy0:sy1, sx0:sx1]
         height, width = ty1-ty0, tx1-tx0
         mode = region.get('mode', 'projective')
-        if mode == 'verified_label_text':
+        if mode == 'source_guided_label':
+            if original is None or original.shape != base.shape:
+                raise ValueError('Source-guided typography requires the original raster')
+            if not region.get('verified_text') or not region.get('reviewed'):
+                raise ValueError('Source-guided labels require a reviewed reference identity')
+            from source_typography import repair_source_label
+            mapped, transform = repair_source_label(original[ty0:ty1,tx0:tx1], patch)
+        elif mode == 'verified_label_text':
             if not region.get('verified_text') or not region.get('reviewed'):
                 raise ValueError('Typesetting requires manually verified static reference text')
             font_paths = [Path('C:/Windows/Fonts/timesbd.ttf'), Path('/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf')]
@@ -126,7 +133,7 @@ def main(argv=None):
     original = orient(original, args.rotate)
     if original.shape != base.shape:
         parser.error('Base shape must match source page at --dpi and --rotate')
-    result, mask, protected, records = transfer_static(base, reference, profile)
+    result, mask, protected, records = transfer_static(base, reference, profile, original)
     args.output.mkdir(parents=True)
     for filename, image in [('original.png',original), ('before.png',base), ('reference.png',reference), ('reconstructed.png',result), ('transferred_mask.png',np.repeat((mask*255).astype(np.uint8)[:,:,None],3,axis=2))]:
         (args.output/filename).write_bytes(png_bytes(image))

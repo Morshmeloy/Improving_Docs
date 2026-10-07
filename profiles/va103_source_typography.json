@@ -1,0 +1,661 @@
+{
+  "schema": 2,
+  "description": "Preserve source typeface and observed glyph envelope; reference may confirm small local holes only. Original raster required.",
+  "protected": [
+    [
+      0.436,
+      0.107,
+      0.94,
+      0.159
+    ],
+    [
+      0.4,
+      0.163,
+      0.94,
+      0.247
+    ],
+    [
+      0.22,
+      0.251,
+      0.94,
+      0.317
+    ],
+    [
+      0.225,
+      0.337,
+      0.94,
+      0.39
+    ],
+    [
+      0.225,
+      0.412,
+      0.94,
+      0.453
+    ],
+    [
+      0.244,
+      0.515,
+      0.94,
+      0.537
+    ],
+    [
+      0.41,
+      0.545,
+      0.94,
+      0.59
+    ],
+    [
+      0.055,
+      0.673,
+      0.94,
+      0.744
+    ],
+    [
+      0.44,
+      0.786,
+      0.94,
+      0.845
+    ],
+    [
+      0.256,
+      0.848,
+      0.405,
+      0.873
+    ],
+    [
+      0.472,
+      0.848,
+      0.94,
+      0.889
+    ],
+    [
+      0.515,
+      0.889,
+      0.94,
+      0.915
+    ],
+    [
+      0.515,
+      0.926,
+      0.94,
+      0.948
+    ],
+    [
+      0.515,
+      0.958,
+      0.94,
+      0.959
+    ],
+    [
+      0.515,
+      0.916,
+      0.734,
+      0.925
+    ],
+    [
+      0.778,
+      0.916,
+      0.94,
+      0.925
+    ],
+    [
+      0.515,
+      0.949,
+      0.734,
+      0.958
+    ],
+    [
+      0.778,
+      0.949,
+      0.94,
+      0.958
+    ],
+    [
+      0.402,
+      0.91,
+      0.515,
+      0.914
+    ],
+    [
+      0.402,
+      0.921,
+      0.515,
+      0.943
+    ]
+  ],
+  "regions": [
+    {
+      "name": "union_banner",
+      "kind": "static_heading",
+      "target": [
+        0.208,
+        0.022,
+        0.801,
+        0.062
+      ],
+      "reference": [
+        0.17,
+        0.0,
+        0.817,
+        0.041
+      ]
+    },
+    {
+      "name": "certificate_heading",
+      "kind": "static_heading",
+      "target": [
+        0.278,
+        0.074,
+        0.716,
+        0.104
+      ],
+      "reference": [
+        0.261,
+        0.053,
+        0.732,
+        0.084
+      ]
+    },
+    {
+      "name": "left_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.019,
+        0.022,
+        0.039,
+        0.984
+      ],
+      "reference": [
+        0.0,
+        0.0,
+        0.023,
+        1.0
+      ]
+    },
+    {
+      "name": "right_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.945,
+        0.022,
+        0.973,
+        0.984
+      ],
+      "reference": [
+        0.97,
+        0.0,
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "name": "top_left_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.039,
+        0.022,
+        0.208,
+        0.041
+      ],
+      "reference": [
+        0.023,
+        0.0,
+        0.17,
+        0.021
+      ]
+    },
+    {
+      "name": "top_right_border",
+      "kind": "ornamental_frame",
+      "target": [
+        0.801,
+        0.022,
+        0.945,
+        0.041
+      ],
+      "reference": [
+        0.817,
+        0.0,
+        0.97,
+        0.021
+      ]
+    },
+    {
+      "name": "bottom_ornament",
+      "kind": "ornamental_frame",
+      "mode": "tile_x",
+      "target": [
+        0.039,
+        0.972,
+        0.945,
+        0.984
+      ],
+      "reference": [
+        0.827,
+        0.0,
+        0.963,
+        0.021
+      ]
+    },
+    {
+      "name": "conformity_body",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ОРГАН ПО СЕРТИФИКАЦИИ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.163,
+        0.333,
+        0.175
+      ],
+      "reference": [
+        0.028,
+        0.147,
+        0.322,
+        0.158
+      ]
+    },
+    {
+      "name": "applicant",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ЗАЯВИТЕЛЬ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.253,
+        0.169,
+        0.266
+      ],
+      "reference": [
+        0.028,
+        0.241,
+        0.151,
+        0.25
+      ]
+    },
+    {
+      "name": "manufacturer",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ИЗГОТОВИТЕЛЬ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.334,
+        0.213,
+        0.347
+      ],
+      "reference": [
+        0.028,
+        0.324,
+        0.196,
+        0.334
+      ]
+    },
+    {
+      "name": "product",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ПРОДУКЦИЯ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.407,
+        0.179,
+        0.42
+      ],
+      "reference": [
+        0.028,
+        0.4,
+        0.161,
+        0.411
+      ]
+    },
+    {
+      "name": "customs_code",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "КОД ТН ВЭД ЕАЭС",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.518,
+        0.23,
+        0.531
+      ],
+      "reference": [
+        0.029,
+        0.51,
+        0.216,
+        0.523
+      ]
+    },
+    {
+      "name": "requirements",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "СООТВЕТСТВУЕТ ТРЕБОВАНИЯМ",
+      "reviewed": true,
+      "target": [
+        0.053,
+        0.545,
+        0.386,
+        0.563
+      ],
+      "reference": [
+        0.029,
+        0.542,
+        0.382,
+        0.555
+      ]
+    },
+    {
+      "name": "issuance_basis",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "СЕРТИФИКАТ СООТВЕТСТВИЯ ВЫДАН НА ОСНОВАНИИ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.655,
+        0.613,
+        0.667
+      ],
+      "reference": [
+        0.03,
+        0.655,
+        0.626,
+        0.667
+      ]
+    },
+    {
+      "name": "additional_info",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.788,
+        0.405,
+        0.8
+      ],
+      "reference": [
+        0.03,
+        0.795,
+        0.404,
+        0.806
+      ]
+    },
+    {
+      "name": "valid_from",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "СРОК ДЕЙСТВИЯ С",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.854,
+        0.245,
+        0.866
+      ],
+      "reference": [
+        0.03,
+        0.864,
+        0.249,
+        0.876
+      ]
+    },
+    {
+      "name": "valid_until",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ПО",
+      "reviewed": true,
+      "target": [
+        0.429,
+        0.854,
+        0.46,
+        0.866
+      ],
+      "reference": [
+        0.426,
+        0.864,
+        0.461,
+        0.876
+      ]
+    },
+    {
+      "name": "inclusive",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "ВКЛЮЧИТЕЛЬНО",
+      "reviewed": true,
+      "target": [
+        0.054,
+        0.873,
+        0.224,
+        0.885
+      ],
+      "reference": [
+        0.03,
+        0.883,
+        0.212,
+        0.895
+      ]
+    },
+    {
+      "name": "director_line1",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "Руководитель (уполномоченное",
+      "reviewed": true,
+      "target": [
+        0.147,
+        0.902,
+        0.378,
+        0.912
+      ],
+      "reference": [
+        0.129,
+        0.912,
+        0.384,
+        0.919
+      ]
+    },
+    {
+      "name": "director_line2",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "лицо) органа по сертификации",
+      "reviewed": true,
+      "target": [
+        0.147,
+        0.915,
+        0.34,
+        0.925
+      ],
+      "reference": [
+        0.129,
+        0.924,
+        0.363,
+        0.933
+      ]
+    },
+    {
+      "name": "expert_line1",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "Эксперт (эксперт-аудитор)",
+      "reviewed": true,
+      "target": [
+        0.147,
+        0.933,
+        0.367,
+        0.946
+      ],
+      "reference": [
+        0.129,
+        0.947,
+        0.339,
+        0.957
+      ]
+    },
+    {
+      "name": "expert_line2",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "(эксперты-аудиторы)",
+      "reviewed": true,
+      "target": [
+        0.147,
+        0.947,
+        0.392,
+        0.959
+      ],
+      "reference": [
+        0.129,
+        0.96,
+        0.339,
+        0.969
+      ]
+    },
+    {
+      "name": "signature_caption1",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "(подпись)",
+      "reviewed": true,
+      "target": [
+        0.458,
+        0.915,
+        0.502,
+        0.92
+      ],
+      "reference": [
+        0.453,
+        0.916,
+        0.506,
+        0.925
+      ]
+    },
+    {
+      "name": "signature_caption2",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "(подпись)",
+      "reviewed": true,
+      "target": [
+        0.457,
+        0.946,
+        0.504,
+        0.954
+      ],
+      "reference": [
+        0.453,
+        0.916,
+        0.506,
+        0.925
+      ]
+    },
+    {
+      "name": "certificate_number_prefix",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "№ ЕАЭС",
+      "reviewed": true,
+      "target": [
+        0.347,
+        0.114,
+        0.421,
+        0.125
+      ],
+      "reference": [
+        0.332,
+        0.093,
+        0.419,
+        0.107
+      ]
+    },
+    {
+      "name": "series_prefix",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "Серия",
+      "reviewed": true,
+      "target": [
+        0.347,
+        0.14,
+        0.398,
+        0.152
+      ],
+      "reference": [
+        0.331,
+        0.12,
+        0.394,
+        0.135
+      ]
+    },
+    {
+      "name": "eac_logo",
+      "kind": "static_symbol",
+      "mode": "source_guided_label",
+      "verified_text": "EAC",
+      "reviewed": true,
+      "target": [
+        0.123,
+        0.096,
+        0.182,
+        0.138
+      ],
+      "reference": [
+        0.093,
+        0.074,
+        0.165,
+        0.121
+      ]
+    },
+    {
+      "name": "name_caption1",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "(ф.и.о.)",
+      "reviewed": true,
+      "target": [
+        0.735,
+        0.916,
+        0.777,
+        0.924
+      ],
+      "reference": [
+        0.746,
+        0.921,
+        0.799,
+        0.93
+      ]
+    },
+    {
+      "name": "name_caption2",
+      "kind": "static_label",
+      "mode": "source_guided_label",
+      "verified_text": "(ф.и.о.)",
+      "reviewed": true,
+      "target": [
+        0.735,
+        0.949,
+        0.777,
+        0.957
+      ],
+      "reference": [
+        0.746,
+        0.921,
+        0.799,
+        0.93
+      ]
+    }
+  ],
+  "source_sha256": "11c99aa13fc6c224a07ed7c9e0e61a0a8cf35f566ec2a2ba249c4e34d7bc3a78",
+  "reference_sha256": "17e3d75bfa510538f2154cf55c44fc6e3c8f3431c88c8987290731a9c0e78815"
+}
