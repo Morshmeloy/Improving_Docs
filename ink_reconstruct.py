@@ -53,23 +53,35 @@ def bounds(box, width, height):
     return max(0, math.floor(box[0] * width)), max(0, math.floor(box[1] * height)), min(width, math.ceil(box[2] * width)), min(height, math.ceil(box[3] * height))
 
 
+def page_regions(refinements, whole_document, gain):
+    base = [{'box': [0, 0, 1, 1], 'gain': gain}] if whole_document else []
+    return base + list(refinements)
+
+
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('input', type=Path)
-    p.add_argument('--regions', required=True, type=Path, help='filename -> page -> boxes in orientation AFTER rotation; box or {box, gain}')
+    p.add_argument('--regions', type=Path, help='filename -> page -> boxes AFTER rotation; with --whole-document these refine the full-page pass')
+    p.add_argument('--whole-document', action='store_true', help='Reconstruct ink on every full page; optional regions refine strength')
     p.add_argument('--output', required=True, type=Path)
     p.add_argument('--rotate', type=int, choices=[0, 90, 180, 270], default=0)
     p.add_argument('--dpi', type=int, default=300)
     p.add_argument('--gain', type=float, default=6)
     p.add_argument('--max-gap', type=int, default=4)
     p.add_argument('--threads', type=int, default=4)
+    p.add_argument('--tile', type=int, default=256)
+    p.add_argument('--overlap', type=int, default=64)
     p.add_argument('--locks', type=Path, help='Exact manual protection, normalized AFTER rotation')
     a = p.parse_args(argv)
+    if not a.whole_document and not a.regions:
+        p.error('Use --whole-document or --regions')
+    if not 128 <= a.tile <= 512 or a.tile % 8 or not 16 <= a.overlap < a.tile:
+        p.error('Invalid tile or overlap')
     if not a.input.is_file() or a.output.exists() or not 72 <= a.dpi <= 600 or not 1 <= a.gain <= 20 or not 0 <= a.max_gap <= 10 or not 1 <= a.threads <= 32:
         p.error('Missing input, existing output or invalid parameters')
-    config = json.loads(a.regions.read_text(encoding='utf-8-sig'))
+    config = json.loads(a.regions.read_text(encoding='utf-8-sig')) if a.regions else {}
     chosen = config.get(a.input.name, {})
-    if not any(chosen.values()):
+    if not a.whole_document and not any(chosen.values()):
         p.error('No drawing regions for this exact input filename')
     locks = json.loads(a.locks.read_text(encoding='utf-8-sig')).get(a.input.name, {}) if a.locks else {}
     from docres_cpu import DocResCPU
@@ -78,7 +90,7 @@ def main(argv=None):
     stage = Path(tempfile.mkdtemp(prefix='.ink_', dir=a.output.parent))
     document = fitz.open()
     expected, cards = [], []
-    report = {'method': 'local ink lifting + pretrained DocRes binarization + explicit endpoint reconstruction', 'source_sha256': sha256(a.input), 'rotate_clockwise': a.rotate, 'time_utc': datetime.now(timezone.utc).isoformat(), 'semantic_accuracy_verified': False, 'pages': []}
+    report = {'method': 'local ink lifting + pretrained DocRes binarization + explicit endpoint reconstruction', 'source_sha256': sha256(a.input), 'scope': 'whole document plus region refinements' if a.whole_document else 'selected regions', 'rotate_clockwise': a.rotate, 'dpi': a.dpi, 'tile': a.tile, 'overlap': a.overlap, 'time_utc': datetime.now(timezone.utc).isoformat(), 'semantic_accuracy_verified': False, 'pages': []}
     total_drawn = 0
     try:
         shutil.copy2(a.input, stage / ('source' + a.input.suffix))
@@ -89,7 +101,8 @@ def main(argv=None):
             area = np.zeros((h, w), bool)
             lock = protection_mask(original, locks.get(str(n), []), color=False)
             page_stats = {'page': n, 'regions': []}
-            for index, entry in enumerate(chosen.get(str(n), []), 1):
+            entries = page_regions(chosen.get(str(n), []), a.whole_document, a.gain)
+            for index, entry in enumerate(entries, 1):
                 box = entry['box'] if isinstance(entry, dict) else entry
                 gain = float(entry.get('gain', a.gain)) if isinstance(entry, dict) else a.gain
                 if not 1 <= gain <= 20:
@@ -98,18 +111,21 @@ def main(argv=None):
                 patch = original[y0:y1, x0:x1]
                 lifted = lift_ink(patch, gain)
                 print(f'Page {n}, region {index}: {x1-x0}x{y1-y0}, gain={gain}', flush=True)
-                segmented = model.restore(lifted, 256, 64)
+                segmented = model.restore(lifted, a.tile, a.overlap)
                 restored, marked, mask, stats = reconstruct_patch(patch, segmented, a.max_gap)
                 editable = ~lock[y0:y1, x0:x1]
                 out[y0:y1, x0:x1][editable] = restored[editable]
                 overlay[y0:y1, x0:x1][editable] = marked[editable]
                 area[y0:y1, x0:x1] = True
-                total_drawn += int((mask & editable).sum())
                 stats.update({'box': box, 'gain': gain, 'drawn_pixels_after_locks': int((mask & editable).sum())})
                 page_stats['regions'].append(stats)
                 prefix = f'page_{n:04d}_region_{index:02d}'
                 for suffix, image in [('original', patch), ('lifted_input', lifted), ('neural_mask', segmented), ('reconstructed', out[y0:y1, x0:x1]), ('overlay', overlay[y0:y1, x0:x1])]:
                     (stage / f'{prefix}_{suffix}.png').write_bytes(png_bytes(image))
+            page_stats['processing_coverage'] = float(area.mean())
+            added_black = np.all(out == 0, axis=2) & np.any(original != 0, axis=2)
+            page_stats['unique_new_black_pixels'] = int(added_black.sum())
+            total_drawn += page_stats['unique_new_black_pixels']
             page_stats['outside_regions_equal'] = bool(np.array_equal(out[~area], original[~area]))
             page_stats['manual_locks_equal'] = bool(np.array_equal(out[lock], original[lock]))
             report['pages'].append(page_stats)
